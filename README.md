@@ -18,16 +18,12 @@ Outputs are written under `pipeline/outputs/<video_basename>/`.
 
 ## Installation
 ```bash
-git clone https://github.com/nvidia-cosmos/cosmos-transfer2.5.git #cosmos transfer 2.5
-cd cosmos_transfer2.5
-git clone <This repo>
+git clone https://github.com/nvidia-cosmos/cosmos-transfer2.5.git cosmos_transfer
+git clone https://github.com/aiden200/cosmos_transfer_2.5_data_preprocessing.git
 ```
 
 ## RAM Installation
 ```bash
-git clone https://github.com/xinyu1205/recognize-anything.git recognize_anything
-pip install -r ./recognize_anything/requirements.txt
-pip install -e ./recognize_anything/
 uv pip install fairscale
 uv pip install git+https://github.com/xinyu1205/recognize-anything.git
 ```
@@ -100,9 +96,8 @@ python pipeline/full_pipeline.py \
   --input-folder pipeline/inputs \
   --control-nets ram,sam2,edge,mask,prompt \
   --ram-checkpoint Grounded-Segment-Anything/ram_swin_large_14m.pth \
-  --mask-prompt "person,table,robot arm" \
+  --mask-prompt "person" \
   --device cuda \
-  --skip \
   --verbose
 ```
 
