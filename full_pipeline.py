@@ -259,7 +259,6 @@ def main():
             basename = get_filename_no_suffix(video_path)
             mask_video_path = os.path.join("pipeline/outputs", basename, "mask.mp4")
             run_mask_pipeline(video_path, mask_objects, mask_video_path)
-            # TODO
 
     # Get prompt
     if "prompt" in control_nets:
@@ -276,7 +275,7 @@ def main():
             #TODO
             prompt_text_path = os.path.join("pipeline/outputs", basename, "prompt.txt")
             with open(prompt_text_path, "w") as f:
-                f.write(tag)
+                f.write(prompt)
 
         for video_path in prompt_files:
             basename = get_filename_no_suffix(video_path)
