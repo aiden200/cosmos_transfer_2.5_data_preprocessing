@@ -12,9 +12,11 @@ def run_mask_pipeline(input_file, prompt_items, output_video):
     # temp_video_location = "pipeline/test.mp4"
     temp_dir = tempfile.gettempdir()
     temp_video_location = os.path.join(temp_dir, f"{os.path.basename(input_file)}_temp_mask.mp4")
+    temp_tensor_location = os.path.join(temp_dir, f"{os.path.basename(input_file)}_temp_tensor.pt")
 
     # 2. Run SAM2 segmentation (this generates a video where the detected objects are non-black and the rest is black)
-    run_sam2_pipeline(input_file, prompt_items, temp_video_location)
+
+    run_sam2_pipeline(input_file, prompt_items, temp_video_location, temp_tensor_location)
 
     # 3. Open the temp video and read frames
     cap = cv2.VideoCapture(temp_video_location)
