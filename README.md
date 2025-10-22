@@ -18,7 +18,7 @@ Outputs are written under `pipeline/outputs/<video_basename>/`.
 
 ## Installation
 ```bash
-git clone https://github.com/nvidia-cosmos/cosmos-transfer2.5.git cosmos_transfer
+git clone https://github.com/nvidia-cosmos/cosmos-transfer2.5.git
 git clone https://github.com/aiden200/cosmos_transfer_2.5_data_preprocessing.git
 ```
 
