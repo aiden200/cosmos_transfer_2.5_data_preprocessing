@@ -1,4 +1,4 @@
-from recognize_anything.ram.models import ram
+from pipeline.recognize_anything.ram.models import ram
 from ram import inference_ram
 import torchvision.transforms as TS
 import torch

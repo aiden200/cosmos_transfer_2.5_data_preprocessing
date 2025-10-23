@@ -18,15 +18,28 @@ Outputs are written under `pipeline/outputs/<video_basename>/`.
 - GPU/CPU selectable device; configurable batch + image size for RAM
 
 ## Installation
+Cosmos transfer 2.5
 ```bash
 git clone https://github.com/nvidia-cosmos/cosmos-transfer2.5.git
-git clone https://github.com/aiden200/cosmos_transfer_2.5_data_preprocessing.git
+cd cosmos-transfer2.5
+uv sync
+source .venv/bin/activate
+```
+
+## Install this repository
+```bash
+cd ..
+git clone https://github.com/aiden200/cosmos_transfer_2.5_data_preprocessing.git pipeline
 ```
 
 ## RAM Installation
 ```bash
 uv pip install fairscale
-uv pip install git+https://github.com/xinyu1205/recognize-anything.git
+cd pipeline
+git clone https://github.com/xinyu1205/recognize-anything.git recognize_anything
+uv pip install -r ./recognize_anything/requirements.txt
+uv pip install -e ./recognize_anything/
+cd ..
 ```
 
 
@@ -81,7 +94,7 @@ Generates mask.mp4 where only the object is kept (others suppressed).
 python -m pipeline.full_pipeline \
   --video-load-type input_folder \
   --input-folder pipeline/inputs \
-  --control-nets ram,sam2,edge,mask,prompt,mask_edges \
+  --control-nets ram,sam2,edge,mask,mask_edges \
   --ram-checkpoint cosmos-transfer2.5/Grounded-Segment-Anything/ram_swin_large_14m.pth \
   --mask-prompt "person" \
   --device cuda \
