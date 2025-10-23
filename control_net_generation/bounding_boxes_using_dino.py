@@ -53,7 +53,7 @@ def draw_and_save_boxes(image_pil, boxes, output_path="output_with_boxes.png"):
 
 
 
-def load_dino_model(grounding_dino_path, device):
+def load_dino_model(grounding_dino_path="IDEA-Research/grounding-dino-base", device="cuda"):
 
     processor = AutoProcessor.from_pretrained(grounding_dino_path)
     grounding_model = AutoModelForZeroShotObjectDetection.from_pretrained(grounding_dino_path).to(device)
