@@ -1,0 +1,25 @@
+{
+    "lighting": {
+        "guidance": 3,
+        "edge": 1.0, 
+        "vis": 0.2
+    },
+    "background": {
+        "guidance": 3,
+        "edge_filtered": 1.0,
+        "seg": 0.4,
+        "seg_mask_inverted": true,
+        "vis": 0.6
+    },
+    "color": {
+        "guidance": 3,
+        "edge": 1.0
+    },
+    "object": {
+        "guidance": 3,
+        "edge": 1.0,
+        "seg": 1.0,
+        "seg_mask": true,
+        "vis": 0.5
+    }
+}
