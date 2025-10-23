@@ -4,12 +4,14 @@ import torch
 from PIL import Image
 
 from pipeline.utils.filepath_functions import create_folders, get_filename_no_suffix, find_video_tags
-from pipeline.control_net_generation.get_object_labels import retrieve_tags
+from pipeline.control_net_generation.get_object_labels import retrieve_tags, get_ram_transform, initialize_ram_model
 from pipeline.control_net_generation.segment_videos import run_sam2_pipeline
 from pipeline.control_net_generation.get_object_edges import generate_edges
 from pipeline.control_net_generation.get_object_depth import get_depth
 from pipeline.control_net_generation.get_prompt import get_prompt
 from pipeline.control_net_generation.mask_videos import run_mask_pipeline
+from pipeline.control_net_generation.bounding_boxes_using_dino import get_first_frame_pil, return_largest_bounding_box, load_dino_model
+from pipeline.utils.filter_out_edges import filter_out_edges
 import argparse, os, sys
 
 #TODO: Depth and prompt
@@ -98,11 +100,18 @@ def main():
         help="Comma-separated list of video extensions to include when loading from a folder."
     )
 
+    parser.add_argument(
+        "--grounding_model_path",
+        type=str,
+        default="IDEA-Research/grounding-dino-base",
+        help="Local directory for GroundingDINO model files",
+    )
+
     args = parser.parse_args()
 
 
 
-    allowed_controls = {"ram", "sam2", "edge", "mask", "prompt"}
+    allowed_controls = {"ram", "sam2", "edge", "mask", "prompt", "mask_edges"}
     control_nets = [c.lower() for c in (args.control_nets or [])]
     unknown = [c for c in control_nets if c not in allowed_controls]
     if unknown:
@@ -142,7 +151,7 @@ def main():
 
     ram_checkpoint_path = args.ram_checkpoint
     ram_img_size = args.img_size
-    ram_device = args.device
+    device = args.device
     ram_batch_size = args.batch_size
 
     video_paths = []
@@ -178,40 +187,21 @@ def main():
         
         print(f"Generating {len(ram_video_files)} RAM (tags) files")
 
-        tags = retrieve_tags(ram_checkpoint_path, ram_video_files, device="cuda", batch_size=16, img_size=384, verbose=False)
-        
-        print(tags)
-        print(ram_video_files)
-        ## TODO: Fix
-        if len(tags) != len(ram_video_files):
-            raise ValueError(f"tags length ({len(tags)}) != files length ({len(ram_video_files)})")
+        if len(ram_video_files) > 0:
+            ram_model = initialize_ram_model(ram_checkpoint_path, image_size=384, device=device)
+            ram_transform = get_ram_transform(image_size=384)
 
-        for video_path, tag in zip(ram_video_files, tags):
+        for video_path in ram_video_files:
+            tags = retrieve_tags(ram_model, ram_transform, video_path, device=device)
             basename = get_filename_no_suffix(video_path)
             parent_dir = os.path.join("pipeline/outputs", basename)
             labels_path = os.path.join(parent_dir, "labels.txt")
             with open(labels_path, "w") as f:
-                f.write(tag)
-
-        for video_path in ram_video_files:
-            basename = get_filename_no_suffix(video_path)
-            labels_path = os.path.join("pipeline/outputs", basename, "labels.txt")
-            with open(labels_path, "r") as f:
-                tags_with_labels[basename] = f.read()
+                f.write(tags)
+            
 
 
-        for video_path, tag in zip(ram_video_files, tags):
-            basename = get_filename_no_suffix(video_path)
-            parent_dir = os.path.join("pipeline/outputs", basename)
-            labels_path = os.path.join(parent_dir, "labels.txt")
-            with open(labels_path, "w") as f:
-                f.write(tag)
 
-        for video_path in ram_video_files:
-            basename = get_filename_no_suffix(video_path)
-            labels_path = os.path.join("pipeline/outputs", basename, "labels.txt")
-            with open(labels_path, "r") as f:
-                tags_with_labels[basename] = f.read()
         
 
     
@@ -221,11 +211,21 @@ def main():
             sam_video_files = find_video_tags(video_paths, "seg.mp4")
         else:
             sam_video_files = video_paths
+        tags_with_labels = {}
+
+
+        for video_path in video_paths:
+            basename = get_filename_no_suffix(video_path)
+            labels_path = os.path.join("pipeline/outputs", basename, "labels.txt")
+            with open(labels_path, "r") as f:
+                tags_with_labels[basename] = f.read()
 
         print(f"Generating {len(sam_video_files)} SAM2 (segment) files")
         for video_path in sam_video_files:
             basename = get_filename_no_suffix(video_path)
             sam_video_path = os.path.join("pipeline/outputs", basename, "seg.mp4")
+
+            #input, tags, output
             run_sam2_pipeline(video_path, tags_with_labels[basename], sam_video_path)
 
 
@@ -240,6 +240,7 @@ def main():
         for video_path in edge_video_files:
             basename = get_filename_no_suffix(video_path)
             edge_video_path = os.path.join("pipeline/outputs", basename, "edge.mp4")
+            # Input, output
             generate_edges(video_path, edge_video_path)
 
 
@@ -255,10 +256,23 @@ def main():
             mask_video_files = video_paths
         print(f"Generating {len(mask_video_files)} mask files")
 
+        if len(mask_video_files) > 0:
+            # Dino Path, Dino config, device
+            dino_model, dino_transform = load_dino_model(args.grounding_model_path, device)
+
         for video_path in mask_video_files:
             basename = get_filename_no_suffix(video_path)
+            
+            # dino
+            image_pil = get_first_frame_pil(video_path)
+            box = return_largest_bounding_box(dino_model, dino_transform, image_pil, mask_objects, device, box_threshold=0.25, text_threshold=0.2)
+            
+            # sam2 + conversion to mask
             mask_video_path = os.path.join("pipeline/outputs", basename, "mask.mp4")
-            run_mask_pipeline(video_path, mask_objects, mask_video_path)
+
+            # input, bounding box, output
+            run_mask_pipeline(video_path, box, mask_video_path)
+    
 
     # Get prompt
     if "prompt" in control_nets:
@@ -282,6 +296,22 @@ def main():
             prompt_text_path = os.path.join("pipeline/outputs", basename, "prompt.txt")
             with open(prompt_text_path, "r") as f:
                 prompts[basename] = f.read()
+    
+
+    if "mask_edges" in control_nets:
+        if not skip_already_loaded:
+            filtered_files = find_video_tags(video_paths, "filtered.mp4")
+        else:
+            filtered_files = video_paths
+        
+        print(f"Generating {len(filtered_files)} filtered edge files")
+
+        for video_path in filtered_files:
+            basename = get_filename_no_suffix(video_path)
+            filtered_video_path = os.path.join("pipeline/outputs", basename, "filtered.mp4")
+            edges_video_path = os.path.join("pipeline/outputs", basename, "edge.mp4")
+            mask_video_path = os.path.join("pipeline/outputs", basename, "mask.mp4")
+            filter_out_edges(edges_video_path, mask_video_path, filtered_video_path)
 
 
 

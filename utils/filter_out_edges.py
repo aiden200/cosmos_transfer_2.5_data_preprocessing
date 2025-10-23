@@ -94,33 +94,7 @@ def apply_mask(edge_frame_bgr, mask_frame, threshold, grow_px=0, close_px=0, fea
 
     return out_bgr, out_rgba
 
-def main():
-    ap = argparse.ArgumentParser(description="AND an edge video with a (grown/feathered) mask video.")
-    # If you want CLI inputs again, uncomment these:
-    # ap.add_argument("--edges", required=True, help="Path to edge video (e.g., edges.mp4)")
-    # ap.add_argument("--mask", required=True, help="Path to mask video (e.g., mask.mp4)")
-    # ap.add_argument("--out", required=True, help="Output video path (e.g., masked_edges.mp4)")
-
-    ap.add_argument("--threshold", type=int, default=0,
-                    help="Mask binarization threshold [0..255], keep where mask>threshold. Default 0.")
-    ap.add_argument("--mask_grow_px", type=int, default=0,
-                    help="Grow/dilate mask outward by ~N pixels (ellipse kernel).")
-    ap.add_argument("--mask_close_px", type=int, default=0,
-                    help="Close small holes/gaps inside mask with ~N pixel kernel.")
-    ap.add_argument("--feather_px", type=int, default=0,
-                    help="Feather edge by ~N pixels (soft alpha near boundary).")
-    ap.add_argument("--fourcc", default="mp4v",
-                    help="OpenCV FOURCC (mp4v, avc1, XVID, MJPG). Default mp4v.")
-    ap.add_argument("--png_dir", default=None,
-                    help="Optional: directory to also dump RGBA PNG frames with transparency.")
-    ap.add_argument("--stop_at", choices=["shortest", "edges", "mask"], default="shortest",
-                    help="When streams differ in length, stop at: shortest (default) | edges | mask.")
-    args = ap.parse_args()
-
-    # Hardcoded paths (as in your snippet). Re-enable CLI above if desired.
-    edges_p = "/home/nvidia/workspace/transfer-guide/cosmos-transfer2.5/assets/xpeng/manipulation_2_edge.mp4"
-    mask_p  = "/home/nvidia/workspace/transfer-guide/cosmos-transfer2.5/Grounded-Segment-Anything/outputs/cosmos/episode_1.mp4"
-    out_p   = "/home/nvidia/workspace/transfer-guide/cosmos-transfer2.5/assets/xpeng/manipulation_2_masked_edges.mp4"
+def filter_out_edges(edges_p, mask_p, out_p, threshold=0, mask_grow_px=0, mask_close_px=0, feather_px=0):
 
     edge_cap = cv2.VideoCapture(str(edges_p))
     mask_cap = cv2.VideoCapture(str(mask_p))
@@ -134,39 +108,16 @@ def main():
     width  = int(edge_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(edge_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-    fourcc = cv2.VideoWriter_fourcc(*args.fourcc)
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
     writer = cv2.VideoWriter(str(out_p), fourcc, fps, (width, height), True)
     if not writer.isOpened():
         raise RuntimeError("Failed to open VideoWriter. Try a different --fourcc (e.g., avc1, XVID, MJPG).")
 
-    png_dir = None
-    if args.png_dir:
-        png_dir = Path(args.png_dir)
-        png_dir.mkdir(parents=True, exist_ok=True)
-
-    frames_written = 0
     last_edge = last_mask = None
 
     while True:
         edge_ok, edge_frame = edge_cap.read()
         mask_ok, mask_frame = mask_cap.read()
-
-        if not edge_ok:
-            if args.stop_at == "edges" and mask_ok:
-                break
-            elif args.stop_at == "mask" and mask_ok and last_edge is not None:
-                edge_frame = last_edge
-            else:
-                if args.stop_at == "shortest":
-                    break
-        if not mask_ok:
-            if args.stop_at == "mask" and edge_ok:
-                break
-            elif args.stop_at == "edges" and edge_ok and last_mask is not None:
-                mask_frame = last_mask
-            else:
-                if args.stop_at == "shortest":
-                    break
 
         if edge_frame is None or mask_frame is None:
             break
@@ -181,24 +132,14 @@ def main():
         out_bgr, out_rgba = apply_mask(
             edge_frame,
             mask_frame,
-            threshold=args.threshold,
-            grow_px=args.mask_grow_px,
-            close_px=args.mask_close_px,
-            feather_px=args.feather_px,
+            threshold=threshold,
+            grow_px=mask_grow_px,
+            close_px=mask_close_px,
+            feather_px=feather_px,
         )
         writer.write(out_bgr)
 
-        if png_dir is not None:
-            cv2.imwrite(str(png_dir / f"frame_{frames_written:06d}.png"), out_rgba)
-
-        frames_written += 1
 
     edge_cap.release()
     mask_cap.release()
     writer.release()
-    print(f"Wrote {frames_written} frames to {out_p}")
-    if png_dir is not None:
-        print(f"Also wrote RGBA PNGs to: {png_dir}")
-
-if __name__ == "__main__":
-    main()

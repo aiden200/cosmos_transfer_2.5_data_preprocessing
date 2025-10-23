@@ -15,6 +15,7 @@ def get_ram_transform(image_size=384):
 def initialize_ram_model(ram_checkpoint_path, image_size, device):
     print("Initializing RAM++ Model...")
     ram_model = ram(pretrained=ram_checkpoint_path, image_size=image_size, vit='swin_l').eval().to(device)
+    ram_model.eval()
     return ram_model
 
 
@@ -28,44 +29,17 @@ def get_first_frame(video_path):
 
 
 def retrieve_tags(
-    ram_checkpoint_path,
-    video_paths,
-    device="cuda",
-    batch_size=16,
-    img_size=384,
-    verbose=False,
+    ram_model,
+    ram_transform,
+    video_path,
+    device="cuda"
 ):
-    ram_model = initialize_ram_model(ram_checkpoint_path, img_size, device)
-    ram_transform = get_ram_transform(img_size)
-
-    pil_images = []
-    keep_idx = []
-    for idx, vp in enumerate(video_paths):
-        frame = get_first_frame(vp)
-        if frame is None:
-            if verbose:
-                print(f"[WARN] Could not read first frame: {vp}")
-            continue
-        rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-        pil_images.append(Image.fromarray(rgb))
-        keep_idx.append(idx)
-
-    if not pil_images:
-        return []
-
-    tensors = [ram_transform(img) for img in pil_images]
-    tags_out = []
-    ram_model.to(device)
-    ram_model.eval()
-
-    with torch.no_grad():
-        for i in range(0, len(tensors), batch_size):
-            batch = torch.stack(tensors[i:i+batch_size], dim=0).to(device, non_blocking=True)
-            responses = inference_ram(batch, ram_model)
-
-            for res in responses:
-                s = res[0] if isinstance(res, (list, tuple)) else res
-                s = s.replace(' |', ',')
-                tags_out.append(s)
-
-    return tags_out
+    frame = get_first_frame(video_path)
+    rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    img = Image.fromarray(rgb)
+    ram_input = ram_transform(img).unsqueeze(0).to(device)
+    res = inference_ram(ram_input, ram_model)
+    s = res[0] if isinstance(res, (list, tuple)) else res
+    s = s.replace(' |', ',')
+    return s
+    

@@ -1,11 +1,12 @@
-# Video Pre-Compute Pipeline (RAM tags / SAM2 seg / Edges / Masks / Prompts)
+# Video Pre-Compute Pipeline (RAM tags / SAM2 seg / Edges / Masks / Prompts / Filtered Edges)
 
 Batch-prepare per-video controls for downstream video editing or generation:
-- RAM (tags/labels) → labels.txt
-- SAM2 (semantic segmentation video) → seg.mp4
-- Edges (edge video) → edge.mp4
-- Masks (object masks from text) → mask.mp4
-- Prompt (scene description) → prompt.txt
+- RAM (tags/labels) -> labels.txt
+- SAM2 (semantic segmentation video) -> seg.mp4
+- Edges (edge video) -> edge.mp4
+- Masks (object masks from text) -> mask.mp4
+- Prompt (scene description) -> prompt.txt
+- Filtered Edges (masking out edges) -> filtered.mp4
 
 Outputs are written under `pipeline/outputs/<video_basename>/`.
 
@@ -28,6 +29,65 @@ uv pip install fairscale
 uv pip install git+https://github.com/xinyu1205/recognize-anything.git
 ```
 
+
+## Directory Layout
+```
+pipeline/
+  inputs/
+    handshake_1.mp4
+    fistbump_1.mp4
+  outputs/
+    handshake_1/
+      labels.txt      # if ram
+      seg.mp4         # if sam2
+      edge.mp4        # if edge
+      mask.mp4        # if mask
+      prompt.txt      # if prompt
+      filtered.mp4    # if mask_edges
+    fistbump_1/
+      ...
+```
+
+## Quick Start Examples
+
+### 1) From a folder: RAM + Edges
+```bash
+python -m pipeline.full_pipeline \
+  --video-load-type input_folder \
+  --input-folder pipeline/inputs \
+  --control-nets ram,edge \
+  --ram-checkpoint checkpoints/ram_vit_b.pth \
+  --device cuda \
+  --batch-size 16 \
+  --img-size 384 \
+  --skip
+```
+Generates labels.txt and edge.mp4 per input video (skips ones that already exist).
+
+### 2) Masks with object list
+```bash
+python -m pipeline.full_pipeline \
+  --video-load-type input_folder \
+  --input-folder pipeline/inputs \
+  --control-nets mask \
+  --mask-prompt "person" \
+  --device cuda \
+  --skip
+```
+Generates mask.mp4 where only the object is kept (others suppressed).
+
+### 3) Full pipeline (RAM + SAM2 + Edge + Mask + Prompt + Filtered Edge)
+```bash
+python -m pipeline.full_pipeline \
+  --video-load-type input_folder \
+  --input-folder pipeline/inputs \
+  --control-nets ram,sam2,edge,mask,prompt,mask_edges \
+  --ram-checkpoint cosmos-transfer2.5/Grounded-Segment-Anything/ram_swin_large_14m.pth \
+  --mask-prompt "person" \
+  --device cuda \
+  --verbose
+```
+
 ## CLI Overview
 ```
 --video-load-type    input_folder | input_file   (required)
@@ -43,64 +103,6 @@ uv pip install git+https://github.com/xinyu1205/recognize-anything.git
 --extensions         mp4,mov,avi,...              (default: common formats)
 --verbose            (flag)                       extra logs
 ```
-
-## Directory Layout
-```
-pipeline/
-  inputs/
-    handshake_1.mp4
-    fistbump_1.mp4
-  outputs/
-    handshake_1/
-      labels.txt      # if ram
-      seg.mp4         # if sam2
-      edge.mp4        # if edge
-      mask.mp4        # if mask
-      prompt.txt      # if prompt
-    fistbump_1/
-      ...
-```
-
-## Quick Start Examples
-
-### 1) From a folder: RAM + Edges
-```bash
-python pipeline/full_pipeline.py \
-  --video-load-type input_folder \
-  --input-folder pipeline/inputs \
-  --control-nets ram,edge \
-  --ram-checkpoint checkpoints/ram_vit_b.pth \
-  --device cuda \
-  --batch-size 16 \
-  --img-size 384 \
-  --skip
-```
-Generates labels.txt and edge.mp4 per input video (skips ones that already exist).
-
-### 2) Masks with object list
-```bash
-python pipeline/full_pipeline.py \
-  --video-load-type input_folder \
-  --input-folder pipeline/inputs \
-  --control-nets mask \
-  --mask-prompt "person,hand,banana" \
-  --device cuda \
-  --skip
-```
-Generates mask.mp4 where only those objects are kept (others suppressed).
-
-### 3) Full pipeline (RAM + SAM2 + Edge + Mask + Prompt)
-```bash
-python pipeline/full_pipeline.py \
-  --video-load-type input_folder \
-  --input-folder pipeline/inputs \
-  --control-nets ram,sam2,edge,mask,prompt \
-  --ram-checkpoint Grounded-Segment-Anything/ram_swin_large_14m.pth \
-  --mask-prompt "person" \
-  --device cuda \
-  --verbose
-```
-
 
 ## Input Options
 ### Load from folder
