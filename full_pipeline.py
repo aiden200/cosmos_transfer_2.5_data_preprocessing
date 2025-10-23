@@ -224,7 +224,7 @@ def main():
         for video_path in sam_video_files:
             basename = get_filename_no_suffix(video_path)
             sam_video_path = os.path.join("pipeline/outputs", basename, "seg.mp4")
-
+            print(tags_with_labels[basename])
             #input, tags, output
             run_sam2_pipeline(video_path, tags_with_labels[basename], sam_video_path)
 
@@ -312,6 +312,20 @@ def main():
             edges_video_path = os.path.join("pipeline/outputs", basename, "edge.mp4")
             mask_video_path = os.path.join("pipeline/outputs", basename, "mask.mp4")
             filter_out_edges(edges_video_path, mask_video_path, filtered_video_path)
+            
+            
+            
+            inverted_mask_video_path = os.path.join("pipeline/outputs", basename, "mask_inversion.mp4")
+            inverted_seg_filtered_video_path = os.path.join("pipeline/outputs", basename, "seg_filtered_inverted.mp4")
+            seg_video_path = os.path.join("pipeline/outputs", basename, "seg.mp4")
+            filter_out_edges(seg_video_path, inverted_mask_video_path, inverted_seg_filtered_video_path)
+            
+            
+            seg_filtered_video_path = os.path.join("pipeline/outputs", basename, "seg_filtered.mp4")
+            seg_video_path = os.path.join("pipeline/outputs", basename, "seg.mp4")
+            filter_out_edges(seg_video_path, mask_video_path, seg_filtered_video_path)
+
+
 
 
 
