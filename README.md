@@ -26,8 +26,8 @@ uv sync
 source .venv/bin/activate
 ```
 
-## Install this repository
-```bash
+This repository
+```
 cd ..
 git clone https://github.com/aiden200/cosmos_transfer_2.5_data_preprocessing.git pipeline
 ```
@@ -35,6 +35,7 @@ git clone https://github.com/aiden200/cosmos_transfer_2.5_data_preprocessing.git
 ## RAM Installation
 ```bash
 uv pip install fairscale
+uv pip install ultralytics
 cd pipeline
 git clone https://github.com/xinyu1205/recognize-anything.git recognize_anything
 uv pip install -r ./recognize_anything/requirements.txt
@@ -94,7 +95,7 @@ Generates mask.mp4 where only the object is kept (others suppressed).
 python -m pipeline.full_pipeline \
   --video-load-type input_folder \
   --input-folder pipeline/inputs \
-  --control-nets ram,sam2,edge,mask,mask_edges \
+  --control-nets edge \
   --ram-checkpoint cosmos-transfer2.5/Grounded-Segment-Anything/ram_swin_large_14m.pth \
   --mask-prompt "person" \
   --device cuda \
