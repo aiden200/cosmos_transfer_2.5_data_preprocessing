@@ -7,6 +7,7 @@ import cv2
 from transformers import AutoModelForZeroShotObjectDetection, AutoProcessor
 from PIL import Image, ImageDraw
 import numpy as np
+from ultralytics import YOLO
 
 
 def get_first_frame_pil(video_path):
@@ -59,6 +60,48 @@ def load_dino_model(grounding_dino_path="IDEA-Research/grounding-dino-base", dev
     grounding_model = AutoModelForZeroShotObjectDetection.from_pretrained(grounding_dino_path).to(device)
 
     return grounding_model, processor
+
+
+def load_yolo_model(model_path="yolov9c.pt"):
+
+    return YOLO(model_path)
+
+
+def yolo_largest_person_box(yolo_model, image_pil, conf=0.90, device="cuda"):
+
+
+    results = yolo_model([image_pil])
+    results[0].save(filename="result.jpg")
+
+
+
+    if not results or len(results) == 0:
+        return None
+
+    r = results[0]
+    if r.boxes is None or r.boxes.xyxy is None or len(r.boxes) == 0:
+        return None
+
+    boxes_xyxy = r.boxes.xyxy.detach().cpu().numpy()  # (N, 4) in pixels
+    classes = r.boxes.cls.detach().cpu().numpy().astype(int)  # (N,)
+
+    person_mask = (classes == 0)
+    person_boxes = boxes_xyxy[person_mask]
+
+    if person_boxes.size == 0:
+        return None
+
+
+    # Pick the largest by area
+    areas = (person_boxes[:, 2] - person_boxes[:, 0]) * (person_boxes[:, 3] - person_boxes[:, 1])
+    idx = int(np.argmax(areas))
+    x0, y0, x1, y1 = person_boxes[idx].tolist()
+    largest_box_str = f"{x0},{y0},{x1},{y1}"
+
+    # Also return all person boxes as a Python list for optional drawing
+    all_person_boxes = person_boxes.tolist()
+    return largest_box_str
+
 
 
 

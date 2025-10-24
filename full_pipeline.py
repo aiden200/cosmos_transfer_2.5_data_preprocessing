@@ -10,8 +10,9 @@ from pipeline.control_net_generation.get_object_edges import generate_edges
 from pipeline.control_net_generation.get_object_depth import get_depth
 from pipeline.control_net_generation.get_prompt import get_prompt
 from pipeline.control_net_generation.mask_videos import run_mask_pipeline
-from pipeline.control_net_generation.bounding_boxes_using_dino import get_first_frame_pil, return_largest_bounding_box, load_dino_model
+from pipeline.control_net_generation.bounding_boxes_using_dino import get_first_frame_pil, return_largest_bounding_box, load_dino_model, load_yolo_model, yolo_largest_person_box
 from pipeline.utils.filter_out_edges import filter_out_edges
+from pipeline.control_net_generation.manipulation import manipulation_mask_generation
 import argparse, os, sys
 
 #TODO: Depth and prompt
@@ -111,7 +112,7 @@ def main():
 
 
 
-    allowed_controls = {"ram", "sam2", "edge", "mask", "prompt", "mask_edges"}
+    allowed_controls = {"ram", "sam2", "edge", "mask", "prompt", "mask_edges", "manipulation"}
     control_nets = [c.lower() for c in (args.control_nets or [])]
     unknown = [c for c in control_nets if c not in allowed_controls]
     if unknown:
@@ -226,7 +227,8 @@ def main():
             sam_video_path = os.path.join("pipeline/outputs", basename, "seg.mp4")
             print(tags_with_labels[basename])
             #input, tags, output
-            run_sam2_pipeline(video_path, tags_with_labels[basename], sam_video_path)
+            tags = tags_with_labels[basename]
+            run_sam2_pipeline(video_path, tags, sam_video_path)
 
 
     # Get edges
@@ -258,21 +260,44 @@ def main():
 
         if len(mask_video_files) > 0:
             # Dino Path, Dino config, device
-            dino_model, dino_transform = load_dino_model(args.grounding_model_path, device)
+            # dino_model, dino_transform = load_dino_model(args.grounding_model_path, device)
+            yolo_model = load_yolo_model()
 
         for video_path in mask_video_files:
             basename = get_filename_no_suffix(video_path)
             
             # dino
             image_pil = get_first_frame_pil(video_path)
-            box = return_largest_bounding_box(dino_model, dino_transform, image_pil, mask_objects, device, box_threshold=0.25, text_threshold=0.2)
-            
+            # box = return_largest_bounding_box(dino_model, dino_transform, image_pil, mask_objects, device, box_threshold=0.25, text_threshold=0.2)
+            box = yolo_largest_person_box(yolo_model, image_pil, conf=0.25, device="cuda")
             # sam2 + conversion to mask
             mask_video_path = os.path.join("pipeline/outputs", basename, "mask.mp4")
 
             # input, bounding box, output
             run_mask_pipeline(video_path, box, mask_video_path)
     
+    
+    if "manipulation" in control_nets:
+        manipulation_prompt = "robotic arm, potato chip bag, can"
+        dino_model, dino_transform = load_dino_model(args.grounding_model_path, device)
+        for video_path in video_paths:
+            basename = get_filename_no_suffix(video_path)
+            manipulation_video_path = os.path.join("pipeline/outputs", basename, "manipulation_mask.mp4")
+
+
+            image_pil = get_first_frame_pil(video_path)
+
+            box = return_largest_bounding_box(dino_model, dino_transform, image_pil, "potato chip bag, can", device, box_threshold=0.1, text_threshold=0.1)
+            mask_video_path = os.path.join("pipeline/outputs", basename, "mask_objects.mp4")
+            run_mask_pipeline(video_path, box, mask_video_path)
+
+            # box = return_largest_bounding_box(dino_model, dino_transform, image_pil, "robotic arm", device, box_threshold=0.1, text_threshold=0.1)
+            # mask_video_path = os.path.join("pipeline/outputs", basename, "mask_arm.mp4")
+            # # input, bounding box, output
+            # run_mask_pipeline(video_path, box, mask_video_path)
+
+            # manipulation_mask_generation(video_path, manipulation_video_path, dino_model, dino_transform, image_pil, manipulation_prompt, device, box_threshold=0.1, text_threshold=0.1)
+
 
     # Get prompt
     if "prompt" in control_nets:
