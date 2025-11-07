@@ -143,3 +143,10 @@ def filter_out_edges(edges_p, mask_p, out_p, threshold=0, mask_grow_px=0, mask_c
     edge_cap.release()
     mask_cap.release()
     writer.release()
+
+
+if __name__ == "__main__":
+        edges_video_path = "edge.mp4" # The edge control modality
+        mask_video_path = "mask.mp4" # The mask video path
+        output_path = "filtered_video.mp4" # output path
+        filter_out_edges(edges_video_path, mask_video_path, output_path)

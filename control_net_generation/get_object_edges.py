@@ -26,3 +26,9 @@ def generate_edges(in_path, out_path):
         out.write(edges)
     cap.release()
     out.release()
+
+
+if __name__ == "__main__":
+    in_path = "input_video.mp4"
+    out_path = "edges.mp4"
+    generate_edges(in_path, out_path)
