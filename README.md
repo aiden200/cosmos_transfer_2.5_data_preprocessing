@@ -1,12 +1,20 @@
 # Video Pre-Compute Pipeline (RAM tags / SAM2 seg / Edges / Masks / Prompts / Filtered Edges)
 
 Batch-prepare per-video controls for downstream video editing or generation:
+
+With the original video:
+<video src="assets/wave.mp4" controls width="300"></video>
 - RAM (tags/labels) -> labels.txt
+  - `arm. black. building. ceiling. pillar. hand. floor. person. man. muscle. pose. shirt. stand. stretch.`
 - SAM2 (semantic segmentation video) -> seg.mp4
+  <video src="assets/seg.mp4" controls width="300"></video>
 - Edges (edge video) -> edge.mp4
-- Masks (object masks from text) -> mask.mp4
-- Prompt (scene description) -> prompt.txt
+  <video src="assets/edge.mp4" controls width="300"></video>
+- Masks (object masks from text) -> mask.mp4 & mask_inversion.mp4
+  <video src="assets/mask.mp4" controls width="300"></video>
+  <video src="assets/mask_inversion.mp4" controls width="300"></video>
 - Filtered Edges (masking out edges) -> filtered.mp4
+  <video src="assets/filtered.mp4" controls width="300"></video>
 
 Outputs are written under `pipeline/outputs/<video_basename>/`.
 
@@ -66,6 +74,7 @@ pipeline/
 
 The important part is to run the correct `--control-nets` arguments.
 - `ram`: Automatically labels the objects in the video.
+  - Requirement: `--ram-checkpoint`
 - `sam2`: Automatically segments objects in the video.
   - Requirement: `ram`.
 - `mask`: Masks out specified objects.
