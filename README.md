@@ -64,6 +64,17 @@ pipeline/
 
 ## Quick Start Examples
 
+The important part is to run the correct `--control-nets` arguments.
+- `ram`: Automatically labels the objects in the video.
+- `sam2`: Automatically segments objects in the video.
+  - Requirement: `ram`.
+- `mask`: Masks out specified objects.
+  - Requirement: `--mask_prompt` (period-separated list of objects, e.g., "person. toy. arm.")
+- `edge`: Generates the edge control modality.
+- `mask_edge`: Generates the filtered edges.
+  - Requirement: `edge`.
+  - Requirement: `mask`.
+
 ### 1) From a folder: RAM + Edges
 ```bash
 python -m pipeline.full_pipeline \
@@ -97,7 +108,7 @@ python -m pipeline.full_pipeline \
   --input-folder pipeline/inputs \
   --control-nets edge \
   --ram-checkpoint cosmos-transfer2.5/Grounded-Segment-Anything/ram_swin_large_14m.pth \
-  --mask-prompt "person" \
+  --mask-prompt "person." \
   --device cuda \
   --verbose
 ```
