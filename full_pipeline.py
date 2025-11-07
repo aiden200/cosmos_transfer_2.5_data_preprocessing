@@ -55,7 +55,7 @@ def main():
     parser.add_argument(
         "--mask-prompt",
         type=_split_csv,
-        help="Comma-separated list of object names to keep in the mask (required if 'mask' in control-nets)."
+        help="Period-separated list of object names to keep in the mask (required if 'mask' in control-nets)."
     )
 
     parser.add_argument(
@@ -260,16 +260,16 @@ def main():
 
         if len(mask_video_files) > 0:
             # Dino Path, Dino config, device
-            # dino_model, dino_transform = load_dino_model(args.grounding_model_path, device)
-            yolo_model = load_yolo_model()
+            dino_model, dino_transform = load_dino_model(args.grounding_model_path, device)
+            # yolo_model = load_yolo_model()
 
         for video_path in mask_video_files:
             basename = get_filename_no_suffix(video_path)
             
             # dino
             image_pil = get_first_frame_pil(video_path)
-            # box = return_largest_bounding_box(dino_model, dino_transform, image_pil, mask_objects, device, box_threshold=0.25, text_threshold=0.2)
-            box = yolo_largest_person_box(yolo_model, image_pil, conf=0.25, device="cuda")
+            box = return_largest_bounding_box(dino_model, dino_transform, image_pil, mask_objects, device, box_threshold=0.25, text_threshold=0.2)
+            # box = yolo_largest_person_box(yolo_model, image_pil, conf=0.25, device="cuda")
             # sam2 + conversion to mask
             mask_video_path = os.path.join("pipeline/outputs", basename, "mask.mp4")
 

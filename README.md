@@ -108,14 +108,14 @@ python -m pipeline.full_pipeline \
 --input-folder       <dir>                       (required for input_folder)
 --input-file         <file.txt>                  (required for input_file)
 --control-nets       ram,sam2,edge,mask,prompt   (comma-separated; required)
---mask-prompt        "obj1,obj2,..."             (required if mask selected)
+--mask-prompt        "obj1. obj2. ..."           (required if mask selected)
 --ram-checkpoint     <path/to/ram.ckpt>          (required if ram selected)
 --device             cuda | cuda:0 | cpu         (default: cuda)
---batch-size         <int>                        (default: 16; for RAM)
---img-size           <int>                        (default: 384; for RAM)
---skip               (flag)                       skip already-generated files
---extensions         mp4,mov,avi,...              (default: common formats)
---verbose            (flag)                       extra logs
+--batch-size         <int>                       (default: 16; for RAM)
+--img-size           <int>                       (default: 384; for RAM)
+--skip               (flag)                      skip already-generated files
+--extensions         mp4,mov,avi,...             (default: common formats)
+--verbose            (flag)                      extra logs
 ```
 
 ## Input Options
@@ -133,6 +133,6 @@ Each line is a path to a video.
 
 ## Troubleshooting
 - “Unknown control(s)”: Check spelling; allowed set is {ram, sam2, edge, mask, prompt}.
-- “Need to specify some mask objects”: Add --mask-prompt "a,b,c" when mask is included.
+- “Need to specify some mask objects”: Add --mask-prompt "a. b. c." when mask is included.
 - “You included ‘ram’… but did not provide –ram-checkpoint.”: Supply a valid checkpoint path.
 - No videos found: Confirm --input-folder and --extensions, or check paths in your file list.

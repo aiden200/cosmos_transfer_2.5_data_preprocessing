@@ -40,6 +40,8 @@ def retrieve_tags(
     ram_input = ram_transform(img).unsqueeze(0).to(device)
     res = inference_ram(ram_input, ram_model)
     s = res[0] if isinstance(res, (list, tuple)) else res
-    s = s.replace(' |', ',')
+    s = s.replace(' |', '.')
+    if s[-1] != ".":
+        s += "."
     return s
     
