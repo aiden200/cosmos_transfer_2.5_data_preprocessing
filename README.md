@@ -3,18 +3,29 @@
 Batch-prepare per-video controls for downstream video editing or generation:
 
 With the original video:
-<video src="assets/wave.mp4" controls width="300"></video>
+
+<img src="assets/wave.gif" width="300"/>
+
 - RAM (tags/labels) -> labels.txt
   - `arm. black. building. ceiling. pillar. hand. floor. person. man. muscle. pose. shirt. stand. stretch.`
+
 - SAM2 (semantic segmentation video) -> seg.mp4
-  <video src="assets/seg.mp4" controls width="300"></video>
+  
+  <img src="assets/seg.gif" width="300"/>
+
 - Edges (edge video) -> edge.mp4
-  <video src="assets/edge.mp4" controls width="300"></video>
+  
+  <img src="assets/edge.gif" width="300"/>
+
 - Masks (object masks from text) -> mask.mp4 & mask_inversion.mp4
-  <video src="assets/mask.mp4" controls width="300"></video>
-  <video src="assets/mask_inversion.mp4" controls width="300"></video>
+  
+  <img src="assets/mask.gif" width="300"/>
+  
+  <img src="assets/mask_inversion.gif" width="300"/>
+
 - Filtered Edges (masking out edges) -> filtered.mp4
-  <video src="assets/filtered.mp4" controls width="300"></video>
+  
+  <img src="assets/filtered.gif" width="300"/>
 
 Outputs are written under `pipeline/outputs/<video_basename>/`.
 
